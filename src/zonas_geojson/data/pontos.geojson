@@ -1,0 +1,200 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "p01",
+      "properties": {
+        "nome": "Coleta 01 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p02",
+      "properties": {
+        "nome": "Coleta 02 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4,
+          4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p03",
+      "properties": {
+        "nome": "Coleta 03 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3,
+          4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p04",
+      "properties": {
+        "nome": "Coleta 04 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7,
+          2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p05",
+      "properties": {
+        "nome": "Coleta 05 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8,
+          2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p06",
+      "properties": {
+        "nome": "Coleta 06 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p07",
+      "properties": {
+        "nome": "Coleta 07 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4,
+          5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p08",
+      "properties": {
+        "nome": "Coleta 08 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1,
+          14
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p09",
+      "properties": {
+        "nome": "Coleta 09 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4,
+          14
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p10",
+      "properties": {
+        "nome": "Coleta 10 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p11",
+      "properties": {
+        "nome": "Coleta 11 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9,
+          0
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p12",
+      "properties": {
+        "nome": "Coleta 12 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "p13",
+      "properties": {
+        "nome": "Coleta 13 — exemplo",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12,
+          12
+        ]
+      }
+    }
+  ]
+}

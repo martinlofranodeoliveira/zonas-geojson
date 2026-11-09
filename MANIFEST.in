@@ -1,0 +1,16 @@
+include README.md LICENSE pyproject.toml MANIFEST.in requirements-build.txt requirements-interop.txt .gitignore .gitattributes
+recursive-include .github/workflows *.yml
+recursive-include src/zonas_geojson *.py *.geojson
+recursive-include tests *.py
+recursive-include scripts *.py
+recursive-include tools *.py
+recursive-include docs *.md *.json *.png *.svg
+recursive-include fixtures/interop *.json *.gpkg *.zip
+prune local
+prune dist
+prune build
+prune .venv-build
+prune .venv-interop
+prune .openai
+prune .impeccable
+global-exclude *.py[cod] __pycache__ .env .env.*

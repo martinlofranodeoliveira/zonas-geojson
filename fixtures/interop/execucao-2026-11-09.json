@@ -1,0 +1,140 @@
+{
+  "cases": {
+    "demo": {
+      "bundleSha256": "22325c9138d249840617e1fa964ebce9671a192a82d21199ac4daf7cfa7327b5",
+      "csvRows": 15,
+      "gdal": {
+        "geojsonRead": 13,
+        "gpkgReopened": 13,
+        "sqliteIntegrity": "ok",
+        "sqliteRows": 13,
+        "sqliteWkbPoints": 13
+      },
+      "inputSha256": {
+        "pontos.geojson": "3f9a47e982ba1c8ebaa28037864ab0d258d995266b8ed63335f214f34c007e74",
+        "zonas.geojson": "1c6ba44e55049363759f2d3a2e12c38967a3374ff480c9f69d4df2caee97dcfb"
+      },
+      "shapely": {
+        "pairs": 52,
+        "pointCount": 13,
+        "zoneCount": 4
+      },
+      "summary": {
+        "ambiguousCount": 2,
+        "boundaryCount": 3,
+        "insideCount": 5,
+        "matchCount": 12,
+        "outsideCount": 3,
+        "pointCount": 13,
+        "pointsWithBoundary": 4,
+        "zoneCount": 4
+      },
+      "zipEntries": 8
+    },
+    "gerado": {
+      "bundleSha256": "4804863cdaa753e7cfb00539d5589c9143e89137a8441b98632a813381638d73",
+      "csvRows": 754,
+      "gdal": {
+        "geojsonRead": 723,
+        "gpkgReopened": 723,
+        "sqliteIntegrity": "ok",
+        "sqliteRows": 723,
+        "sqliteWkbPoints": 723
+      },
+      "inputSha256": {
+        "pontos.geojson": "9fbe7c874477ded218c6445e3421939ea3c5738d93ca565d0d43aa81a02cd514",
+        "zonas.geojson": "8b0f0245a4f67741660ebbe466772f2e2cc6883611ffcbe6ea479abe7f577c97"
+      },
+      "shapely": {
+        "pairs": 3615,
+        "pointCount": 723,
+        "zoneCount": 5
+      },
+      "summary": {
+        "ambiguousCount": 31,
+        "boundaryCount": 72,
+        "insideCount": 111,
+        "matchCount": 245,
+        "outsideCount": 509,
+        "pointCount": 723,
+        "pointsWithBoundary": 84,
+        "zoneCount": 5
+      },
+      "zipEntries": 8
+    },
+    "precisao": {
+      "bundleSha256": "95af8e8706ee382ad3ce4187eea13e492fc5ce5f5801de6af41e4005a0d914b5",
+      "csvRows": 3,
+      "inputSha256": {
+        "pontos.geojson": "508bb81cb7a21668607f9a9483631e30d8fd6367cb336dd3f01ab8c67696db8b",
+        "zonas.geojson": "3e5cab9bddb7687b64f73d3bdcd77c8cd733dd6b02b5fa82f4fc24b39c2ea347"
+      },
+      "manualDecimalOracle": {
+        "floatOracleUsed": false,
+        "places": 18,
+        "points": 3
+      },
+      "summary": {
+        "ambiguousCount": 0,
+        "boundaryCount": 1,
+        "insideCount": 1,
+        "matchCount": 2,
+        "outsideCount": 1,
+        "pointCount": 3,
+        "pointsWithBoundary": 1,
+        "zoneCount": 1
+      },
+      "zipEntries": 8
+    }
+  },
+  "cliOutsideCheckout": true,
+  "implementationImported": false,
+  "installedDistribution": {
+    "python": "3.14.4",
+    "runtimeSha256": {
+      "zonas_geojson/__init__.py": "0e62fdb841a72431c9f3b3377a60c8c70eeccab2ddd9607b98999e150a453f9e",
+      "zonas_geojson/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+      "zonas_geojson/cli.py": "f5abe91f970eea77ba753d376c59712bad7765d14aeecca8cd01b8b24d82453e",
+      "zonas_geojson/core.py": "a58576e888c9dd55201deae3c71c0b6208b2acb89c00e70d8d0df48d04858106",
+      "zonas_geojson/data/pontos.geojson": "3f9a47e982ba1c8ebaa28037864ab0d258d995266b8ed63335f214f34c007e74",
+      "zonas_geojson/data/zonas.geojson": "1c6ba44e55049363759f2d3a2e12c38967a3374ff480c9f69d4df2caee97dcfb",
+      "zonas_geojson/errors.py": "e9683763ead698e9601be1e8689e437fe7aef2442a80ebbb7bb8f51f05337438",
+      "zonas_geojson/jsoncodec.py": "4c2fc3cec911e4fb400fff8dc8a0b0958af4413fe3f591bad93552026a5251d2",
+      "zonas_geojson/reports.py": "f37dee4e1c78c17378c378ed255295c357f10e05667e77592ae168686b72049d"
+    },
+    "version": "1.0.0"
+  },
+  "networkIsolation": {
+    "linuxLoopbackOnly": true,
+    "noIpv4Routes": true,
+    "required": true,
+    "verified": true
+  },
+  "ok": true,
+  "qaLaunch": {
+    "cleanEnvironment": true,
+    "kernelNetworkNamespace": true,
+    "temporaryProfile": true,
+    "temporaryWorkingDirectory": true
+  },
+  "retainedArtifacts": {
+    "demo-consumidor.gpkg": {
+      "sha256": "6384dd9068c4150e2ea879a40d2a5db43f0e694227f6c07bd23464c2f9388b9e",
+      "size": 98304
+    },
+    "demo-verificado.zip": {
+      "sha256": "22325c9138d249840617e1fa964ebce9671a192a82d21199ac4daf7cfa7327b5",
+      "size": 29635
+    }
+  },
+  "schemaVersion": 1,
+  "temporaryInputsAndProfile": true,
+  "versions": {
+    "fiona": "1.10.1",
+    "gdal": "3.9.2",
+    "geos": "3.14.1",
+    "python": "3.13.1",
+    "shapely": "2.2.0",
+    "sqlite": "3.47.1"
+  }
+}

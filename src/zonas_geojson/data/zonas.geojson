@@ -1,0 +1,201 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "centro",
+      "properties": {
+        "nome": "Centro com um espaço excluído",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              8,
+              0
+            ],
+            [
+              8,
+              8
+            ],
+            [
+              0,
+              8
+            ],
+            [
+              0,
+              0
+            ]
+          ],
+          [
+            [
+              3,
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [
+              5,
+              5
+            ],
+            [
+              5,
+              3
+            ],
+            [
+              3,
+              3
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "leste",
+      "properties": {
+        "nome": "Área Leste sobreposta",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              6,
+              -1
+            ],
+            [
+              10,
+              -1
+            ],
+            [
+              10,
+              6
+            ],
+            [
+              6,
+              6
+            ],
+            [
+              6,
+              -1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ilhas",
+      "properties": {
+        "nome": "Duas ilhas separadas",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [
+                -5,
+                0
+              ],
+              [
+                -3,
+                0
+              ],
+              [
+                -3,
+                2
+              ],
+              [
+                -5,
+                2
+              ],
+              [
+                -5,
+                0
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -5,
+                4
+              ],
+              [
+                -3,
+                4
+              ],
+              [
+                -3,
+                6
+              ],
+              [
+                -5,
+                6
+              ],
+              [
+                -5,
+                4
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "recanto",
+      "properties": {
+        "nome": "Recanto em L",
+        "dados": "fictícios"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0,
+              10
+            ],
+            [
+              6,
+              10
+            ],
+            [
+              6,
+              12
+            ],
+            [
+              2,
+              12
+            ],
+            [
+              2,
+              16
+            ],
+            [
+              0,
+              16
+            ],
+            [
+              0,
+              10
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

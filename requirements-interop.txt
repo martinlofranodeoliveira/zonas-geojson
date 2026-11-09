@@ -1,0 +1,10 @@
+# Somente QA; o pacote zonas-geojson não tem dependências de runtime.
+# Metadados oficiais PyPI consultados em 2026-11-09. Python 3.13 para Fiona.
+shapely==2.2.0
+fiona==1.10.1
+numpy==2.5.4
+attrs==26.1.0
+certifi==2026.10.23
+click==8.5.1
+click-plugins==1.1.1.2
+cligj==0.7.2
