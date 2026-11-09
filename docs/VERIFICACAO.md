@@ -34,7 +34,7 @@ A versão reúne wheel, sdist, `exemplo-zonas.zip` e `SHA256SUMS`. Os arquivos d
 
 ## Evidência local desta versão
 
-Em 9 de novembro de 2026 passaram 59 testes: 24 de geometria/modelo, 14 de JSON/relatórios, seis da CLI, nove do leitor independente e seis da distribuição. O wheel tem 15 membros, incluindo nove arquivos de runtime; o sdist contém 35 arquivos públicos e sete metadados gerados. Ambos foram instalados em ambientes temporários fora do checkout, executaram o exemplo de 13 pontos e preservaram o destino em uma segunda tentativa. O exemplo tem oito arquivos e passou pela leitura independente.
+Em 9 de novembro de 2026 passaram 65 testes: 24 de geometria/modelo, 14 de JSON/relatórios, seis da CLI, 14 do leitor independente/diagnóstico e sete da distribuição. O wheel tem 15 membros, incluindo nove arquivos de runtime; o sdist contém 35 arquivos públicos e sete metadados gerados. Ambos foram instalados em ambientes temporários fora do checkout, executaram o exemplo de 13 pontos e preservaram o destino em uma segunda tentativa. O exemplo tem oito arquivos e passou pela leitura independente.
 
 Uma revisão encontrou que a comparação de fontes usava igualdade de Python e confundia booleanos com números. A comparação agora percorre os tipos JSON; o passe dirigido reproduziu a recusa `REPORT_SOURCE` e marcou esse achado como resolvido. Isso não equivale a uma certificação geral de todos os casos.
 

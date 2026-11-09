@@ -131,6 +131,11 @@ def run(args, *, cwd, env):
     return p.stdout
 
 
+def installed_origin_matches(location, environment):
+    """Canonicalize both paths, including Windows junctions and 8.3 names."""
+    return Path(location).resolve().is_relative_to(Path(environment).resolve())
+
+
 def check_install(path):
     artifact = path.resolve()
     with tempfile.TemporaryDirectory(prefix='zonas-install-') as temporary:
@@ -146,7 +151,7 @@ def check_install(path):
             run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', 'setuptools==84.2.1'], cwd=temporary, env=environment)
         run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '--no-deps', '--no-build-isolation', str(artifact)], cwd=temporary, env=environment)
         location = run([str(python), '-c', 'import zonas_geojson; print(zonas_geojson.__file__)'], cwd=temporary, env=environment).strip()
-        require(Path(location).resolve().is_relative_to(env_dir), 'A importação não veio da instalação isolada.')
+        require(installed_origin_matches(location, env_dir), 'A importação não veio da instalação isolada.')
         require(run([str(cli), '--version'], cwd=temporary, env=environment).strip().endswith(VERSION), 'Versão instalada divergente.')
         bundle = temporary / 'exemplo.zip'
         run([str(cli), 'exemplo', '--saida', str(bundle)], cwd=temporary, env=environment)

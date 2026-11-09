@@ -1,20 +1,28 @@
 """Testes do consumidor independente, sem importar zonas_geojson."""
 import copy
+from contextlib import redirect_stderr, redirect_stdout
 from decimal import Decimal
+import errno
 import hashlib
 import importlib.util
 import io
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 spec = importlib.util.spec_from_file_location("independent_bundle_reader", TOOLS / "check_bundle.py")
 reader = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reader)
+external_spec = importlib.util.spec_from_file_location("independent_external_verifier", TOOLS / "verify_external.py")
+external = importlib.util.module_from_spec(external_spec)
+with mock.patch.dict(sys.modules, {"check_bundle": reader}):
+    external_spec.loader.exec_module(external)
 
 
 def encoded(value):
@@ -154,6 +162,92 @@ class IndependentReaderTests(unittest.TestCase):
         raw[offset] ^= 0x01
         with self.assertRaises((reader.CheckError, zipfile.BadZipFile)):
             self.check(bytes(raw))
+
+
+class ExternalDiagnosticsTests(unittest.TestCase):
+    """Exercita falhas com mocks; não importa produção nem executa GEOS/GDAL."""
+    def invoke(self, arguments):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = external.main(arguments)
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        return json.loads(stderr.getvalue()), stderr.getvalue()
+
+    def test_missing_report_parent_fails_before_verification(self):
+        with tempfile.TemporaryDirectory(prefix="zonas-private-marker-") as temporary:
+            report = Path(temporary) / "private-report-parent" / "evidencia.json"
+            with mock.patch.object(external, "run_verification") as verify:
+                result, raw = self.invoke(["--cli", "private-cli-input", "--report", str(report)])
+            verify.assert_not_called()
+            self.assertFalse(report.parent.exists())
+        self.assertEqual(result["phase"], "report.precheck")
+        self.assertEqual(result["errorClass"], "CheckError")
+        self.assertIn("diretório pai", result["detail"])
+        for private in ("private-cli-input", "private-report-parent", "zonas-private-marker-", temporary):
+            self.assertNotIn(private, raw)
+
+    def test_errno_and_phase_survive_without_private_oserror_text(self):
+        def fail(*args, diagnostics, **kwargs):
+            diagnostics.enter("demo.gdal")
+            raise PermissionError(errno.EACCES, "PRIVATE_CREDENTIAL_VALUE", "/home/private-profile/private-file")
+        with mock.patch.object(external, "run_verification", side_effect=fail):
+            result, raw = self.invoke(["--cli", "private-cli-input"])
+        self.assertEqual((result["phase"], result["errorClass"], result["errno"]),
+                         ("demo.gdal", "PermissionError", errno.EACCES))
+        for private in ("PRIVATE_CREDENTIAL_VALUE", "/home/", "private-profile", "private-cli-input"):
+            self.assertNotIn(private, raw)
+
+    def test_report_write_error_identifies_write_phase(self):
+        with tempfile.TemporaryDirectory(prefix="zonas-private-marker-") as temporary:
+            report = Path(temporary) / "private-output.json"
+            error = PermissionError(errno.EACCES, "PRIVATE_WRITE_SECRET", str(report))
+            with mock.patch.object(external, "run_verification", return_value={"ok": True}), \
+                 mock.patch.object(Path, "write_text", side_effect=error):
+                result, raw = self.invoke(["--cli", "private-cli-input", "--report", str(report)])
+        self.assertEqual(result["phase"], "report.write")
+        self.assertEqual(result["errno"], errno.EACCES)
+        self.assertNotIn("PRIVATE_WRITE_SECRET", raw)
+        self.assertNotIn(temporary, raw)
+
+    def test_failed_process_omits_data_arguments_paths_and_traceback(self):
+        stdout = b'{"nome":"PRIVATE_PAYLOAD_VALUE"}'
+        stderr = (b'Traceback (most recent call last):\n  File "/home/private-profile/secret.py", line 2\n'
+                  b'PermissionError: [Errno 13] Permission denied: "/home/private profile/secret"\n'
+                  b'[CLI_IO] PRIVATE_STREAM_VALUE\n')
+        completed = subprocess.CompletedProcess(["/home/private/cli", "PRIVATE_ARGUMENT"], 2, stdout, stderr)
+        def fail(*args, diagnostics, **kwargs):
+            diagnostics.enter("gerado.cli")
+            result = external._run_process(["PRIVATE_ARGUMENT"], diagnostics=diagnostics, timeout=1)
+            reader.require(result.returncode == 0, "CLI instalada recusou ensaio independente")
+        with mock.patch.object(external, "run_verification", side_effect=fail), \
+             mock.patch.object(external.subprocess, "run", return_value=completed):
+            result, raw = self.invoke(["--cli", "private-cli-input"])
+        self.assertEqual(result["phase"], "gerado.cli")
+        self.assertEqual(result["process"]["returncode"], 2)
+        self.assertEqual(result["detail"], "CLI instalada recusou ensaio independente")
+        self.assertEqual(result["process"]["stdout"]["bytes"], len(stdout))
+        self.assertIn("PermissionError: errno=13 <detalhe omitido>",
+                      result["process"]["stderr"]["diagnostics"])
+        self.assertIn("[CLI_IO] <detalhe omitido>", result["process"]["stderr"]["diagnostics"])
+        for private in ("PRIVATE_PAYLOAD_VALUE", "PRIVATE_STREAM_VALUE", "PRIVATE_ARGUMENT", "/home/", "Traceback"):
+            self.assertNotIn(private, raw)
+
+    def test_timeout_identifies_phase_without_repeating_command(self):
+        def fail(*args, diagnostics, **kwargs):
+            diagnostics.enter("distribution.inspect")
+            external._run_process(["PRIVATE_COMMAND"], diagnostics=diagnostics, timeout=3)
+        timeout = subprocess.TimeoutExpired(["/home/private/cli"], 3,
+                                            output=b"PRIVATE_TIMEOUT_VALUE", stderr=b"PRIVATE_STDERR")
+        with mock.patch.object(external, "run_verification", side_effect=fail), \
+             mock.patch.object(external.subprocess, "run", side_effect=timeout):
+            result, raw = self.invoke(["--cli", "private-cli-input"])
+        self.assertEqual(result["phase"], "distribution.inspect")
+        self.assertEqual(result["errorClass"], "TimeoutExpired")
+        self.assertEqual(result["timeoutSeconds"], 3)
+        self.assertTrue(result["process"]["timedOut"])
+        for private in ("PRIVATE_COMMAND", "PRIVATE_TIMEOUT_VALUE", "PRIVATE_STDERR", "/home/"):
+            self.assertNotIn(private, raw)
 
 
 if __name__ == "__main__":

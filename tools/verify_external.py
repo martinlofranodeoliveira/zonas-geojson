@@ -14,14 +14,77 @@ import json
 import os
 from pathlib import Path
 import random
+import re
 import socket
 import sqlite3
+import stat
 import struct
 import subprocess
 import sys
 import tempfile
 
-from check_bundle import check_bundle, json_equal, load_json, match_pairs, require
+from check_bundle import CheckError, check_bundle, json_equal, load_json, match_pairs, require
+
+
+class _Diagnostics:
+    """Etapas autorais fixas; argumentos e dados do ensaio nunca entram no log."""
+    def __init__(self):
+        self.phase = "arguments"
+        self.process = None
+
+    def enter(self, phase):
+        self.phase = phase
+        self.process = None
+
+
+def _stream_diagnostic(value):
+    """Resume streams sem imprimir dados, caminhos, argumentos ou traceback."""
+    raw = value.encode("utf-8", errors="replace") if isinstance(value, str) else (value or b"")
+    text = raw.decode("utf-8", errors="replace")
+    diagnostics = []
+    for line in text.splitlines()[-12:]:
+        code = re.match(r"^\[([A-Z][A-Z0-9_]{0,47})\]", line)
+        exception = re.match(r"^([A-Za-z_][A-Za-z0-9_]{0,63}(?:Error|Exception)):", line)
+        if code:
+            diagnostics.append("[" + code.group(1) + "] <detalhe omitido>")
+        elif exception:
+            number = re.search(r"\[Errno ([0-9]{1,6})\]", line)
+            diagnostics.append(exception.group(1) + (": errno=" + number.group(1) if number else "")
+                               + " <detalhe omitido>")
+        elif line == "Relatório criado." or re.fullmatch(r"zonas-geojson [0-9]+\.[0-9]+\.[0-9]+", line):
+            diagnostics.append(line)
+    return {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
+            "diagnostics": diagnostics, "rawContentOmitted": True}
+
+
+def _run_process(arguments, *, diagnostics, **kwargs):
+    try:
+        completed = subprocess.run(arguments, capture_output=True, check=False, **kwargs)
+    except subprocess.TimeoutExpired as error:
+        diagnostics.process = {"stdout": _stream_diagnostic(error.stdout),
+                               "stderr": _stream_diagnostic(error.stderr), "timedOut": True}
+        raise
+    if completed.returncode:
+        diagnostics.process = {"returncode": completed.returncode,
+                               "stdout": _stream_diagnostic(completed.stdout),
+                               "stderr": _stream_diagnostic(completed.stderr)}
+    return completed
+
+
+def _failure_diagnostic(error, diagnostics):
+    result = {"ok": False, "phase": diagnostics.phase, "errorClass": type(error).__name__,
+              "message": "Falha na verificação externa; nenhuma aprovação emitida."}
+    if isinstance(error, CheckError):
+        # CheckError nasce apenas de mensagens autorais fixas nos verificadores.
+        message = re.sub(r"(['\"])(?:[A-Za-z]:[\\/]|/)[^'\"]*\1", "<caminho>", str(error))
+        result["detail"] = re.sub(r"(?:[A-Za-z]:[\\/]|/)[^\s'\"<>]+", "<caminho>", message)[:400]
+    elif isinstance(error, OSError):
+        result["errno"] = error.errno
+    elif isinstance(error, subprocess.TimeoutExpired):
+        result["timeoutSeconds"] = error.timeout
+    if diagnostics.process is not None:
+        result["process"] = diagnostics.process
+    return result
 
 
 def _feature(identifier, kind, coordinates, properties):
@@ -231,7 +294,7 @@ def _network_evidence(required):
             "noIpv4Routes": bool(no_routes), "verified": verified}
 
 
-def _installed_metadata(cli, directory, env):
+def _installed_metadata(cli, directory, env, diagnostics):
     # Interpretação isolada somente da distribuição/arquivos, sem importar o pacote.
     interpreter = cli.parent / ("python.exe" if os.name == "nt" else "python")
     code = '''import hashlib,importlib.metadata,json,sys
@@ -241,8 +304,8 @@ files={str(f):hashlib.sha256(Path(package.locate_file(f)).read_bytes()).hexdiges
        for f in package.files if str(f).startswith("zonas_geojson/") and str(f).endswith((".py",".geojson"))}
 print(json.dumps({"version":package.version,"python":sys.version.split()[0],"runtimeSha256":files},sort_keys=True))
 '''
-    completed = subprocess.run([str(interpreter), "-I", "-c", code], cwd=directory, env=env,
-                               capture_output=True, timeout=30, check=False)
+    completed = _run_process([str(interpreter), "-I", "-c", code], diagnostics=diagnostics,
+                             cwd=directory, env=env, timeout=30)
     require(completed.returncode == 0, "Não foi possível verificar os arquivos da distribuição instalada")
     metadata = load_json(completed.stdout)
     require(metadata["version"] == "1.0.0" and len(metadata["runtimeSha256"]) == 9,
@@ -250,41 +313,51 @@ print(json.dumps({"version":package.version,"python":sys.version.split()[0],"run
     return metadata
 
 
-def run_verification(cli, parent=None, *, require_network_isolation=False, keep_demo=None):
+def run_verification(cli, parent=None, *, require_network_isolation=False, keep_demo=None, diagnostics=None):
+    diagnostics = diagnostics if diagnostics is not None else _Diagnostics()
+    diagnostics.enter("dependencies.import")
     import fiona
     import shapely
+    diagnostics.enter("cli.inspect")
     cli = Path(cli).resolve(strict=True)
     require(cli.is_file() and os.access(cli, os.X_OK), "CLI instalada não é executável regular")
     checkout = Path(__file__).resolve().parents[1]
     require(not cli.is_relative_to(checkout), "Instale a CLI fora do checkout para este ensaio")
     if keep_demo is not None:
+        diagnostics.enter("artifacts.precheck")
         keep_demo = Path(keep_demo).resolve(strict=True)
         require(keep_demo.is_dir(), "Diretório de retenção deve existir")
+    diagnostics.enter("network.inspect")
     report = {"schemaVersion": 1, "ok": True, "implementationImported": False,
               "cliOutsideCheckout": True, "temporaryInputsAndProfile": True,
               "networkIsolation": _network_evidence(require_network_isolation),
               "versions": {"python": sys.version.split()[0], "shapely": shapely.__version__,
                            "geos": shapely.geos_version_string, "fiona": fiona.__version__,
                            "gdal": fiona.__gdal_version__, "sqlite": sqlite3.sqlite_version}, "cases": {}}
+    diagnostics.enter("environment.prepare")
     with tempfile.TemporaryDirectory(prefix="zonas-interop-", dir=parent) as temp:
         directory = Path(temp)
         env = _environment(directory)
-        report["installedDistribution"] = _installed_metadata(cli, directory, env)
+        diagnostics.enter("distribution.inspect")
+        report["installedDistribution"] = _installed_metadata(cli, directory, env, diagnostics)
 
         def invoke(*args):
-            completed = subprocess.run([str(cli), *map(str, args)], cwd=directory, env=env,
-                                       capture_output=True, timeout=180, check=False)
+            completed = _run_process([str(cli), *map(str, args)], diagnostics=diagnostics,
+                                     cwd=directory, env=env, timeout=180)
             require(completed.returncode == 0, "CLI instalada recusou ensaio independente")
             return completed
 
+        diagnostics.enter("cli.version")
         invoke("--version")
         retained = {}
         for name in ("demo", "gerado", "precisao"):
+            diagnostics.enter(name + ".inputs")
             case = directory / name
             case.mkdir()
             archive = case / "resultado.zip"
             point_bytes = zone_bytes = None
             if name == "demo":
+                diagnostics.enter(name + ".cli")
                 invoke("exemplo", "--saida", archive)
             else:
                 if name == "gerado":
@@ -294,24 +367,30 @@ def run_verification(cli, parent=None, *, require_network_isolation=False, keep_
                     point_bytes, zone_bytes = PRECISION_POINTS, PRECISION_ZONES
                 (case / "pontos.geojson").write_bytes(point_bytes)
                 (case / "zonas.geojson").write_bytes(zone_bytes)
+                diagnostics.enter(name + ".cli")
                 invoke("analisar", case / "pontos.geojson", case / "zonas.geojson", "--saida", archive)
+            diagnostics.enter(name + ".bundle")
             checked = check_bundle(archive, demo=name == "demo", points_bytes=point_bytes, zones_bytes=zone_bytes)
             outcome = {"bundleSha256": checked["sha256"], "summary": checked["result"]["summary"],
                        "csvRows": checked["csvRows"], "zipEntries": 8,
                        "inputSha256": {key: hashlib.sha256(checked["files"][key]).hexdigest()
                                        for key in ("pontos.geojson", "zonas.geojson")}}
             if name == "precisao":
+                diagnostics.enter(name + ".literal")
                 require({p["id"]: match_pairs(p) for p in checked["result"]["points"]} == PRECISION_GOLD,
                         "CLI divergiu do ouro decimal literal")
                 outcome["manualDecimalOracle"] = {"points": 3, "places": 18, "floatOracleUsed": False}
             else:
+                diagnostics.enter(name + ".geos")
                 outcome["shapely"] = check_shapely(checked)
+                diagnostics.enter(name + ".gdal")
                 outcome["gdal"] = check_gdal(checked, case)
                 if name == "demo" and keep_demo is not None:
                     retained = {"demo-verificado.zip": archive.read_bytes(),
                                 "demo-consumidor.gpkg": (case / "consumidor.gpkg").read_bytes()}
             report["cases"][name] = outcome
         if retained:
+            diagnostics.enter("artifacts.write")
             report["retainedArtifacts"] = {}
             for name, content in retained.items():
                 (keep_demo / name).write_bytes(content)
@@ -330,16 +409,28 @@ def main(argv=None):
     parser.add_argument("--keep-demo", type=Path,
                         help="Retém somente ZIP e GPKG sintéticos do exemplo em diretório existente")
     args = parser.parse_args(argv)
+    diagnostics = _Diagnostics()
     try:
+        diagnostics.enter("report.precheck")
+        if args.report:
+            try:
+                parent_mode = args.report.parent.stat().st_mode
+            except FileNotFoundError:
+                raise CheckError("O diretório pai do relatório deve existir antes do ensaio.") from None
+            require(stat.S_ISDIR(parent_mode), "O diretório pai do relatório deve existir antes do ensaio.")
+        diagnostics.enter("verification.start")
         report = run_verification(args.cli, args.workdir,
                                   require_network_isolation=args.require_network_isolation,
-                                  keep_demo=args.keep_demo)
+                                  keep_demo=args.keep_demo, diagnostics=diagnostics)
+        diagnostics.enter("report.serialize")
         output = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         if args.report:
+            diagnostics.enter("report.write")
             args.report.write_text(output, encoding="utf-8")
-    except Exception:
+    except Exception as error:
         # Inclui erros de drivers binários de QA sem vazar caminhos em traceback.
-        print("Falha na verificação externa; nenhuma aprovação emitida.", file=sys.stderr)
+        print(json.dumps(_failure_diagnostic(error, diagnostics), ensure_ascii=False, sort_keys=True),
+              file=sys.stderr)
         return 2
     print(output, end="")
     return 0

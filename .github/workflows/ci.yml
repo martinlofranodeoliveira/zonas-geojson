@@ -68,4 +68,6 @@ jobs:
       - name: Conferir namespace isolado
         run: unshare --user --map-root-user --net -- true
       - name: Conferir resultados da CLI instalada com os consumidores independentes
-        run: unshare --user --map-root-user --net -- python tools/verify_external.py --require-network-isolation --cli "$(command -v zonas-geojson)" --report local/consumer-ci.json
+        run: |
+          mkdir -p local
+          unshare --user --map-root-user --net -- python tools/verify_external.py --require-network-isolation --cli "$(command -v zonas-geojson)" --report local/consumer-ci.json

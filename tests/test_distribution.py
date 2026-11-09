@@ -79,6 +79,19 @@ class DistributionTests(unittest.TestCase):
         (self.root / '.venv-check/config.py').write_text('private')
         self.assertEqual(set(checker.source_files(self.root)), {'LICENSE', 'src/zonas_geojson/__init__.py'})
 
+    def test_environment_alias_resolves_to_the_same_installed_origin(self):
+        environment = self.root / 'real-environment'
+        package = environment / 'lib' / 'module.py'
+        package.parent.mkdir(parents=True)
+        package.write_text('synthetic fixture')
+        alias = self.root / 'environment-alias'
+        try:
+            alias.symlink_to(environment, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest('Directory alias creation is unavailable')
+        self.assertTrue(checker.installed_origin_matches(package, alias))
+        self.assertFalse(checker.installed_origin_matches(self.root / 'outside.py', alias))
+
     def test_unsafe_archive_paths_are_rejected(self):
         for name in ['/absolute', '../escape', 'a/../b', 'a\\b', '.impeccable/state.json', 'local/data.json', '.env', '.venv/bin/python']:
             with self.subTest(name=name), self.assertRaises(ValueError):
